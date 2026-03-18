@@ -2,28 +2,141 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Simple Aim Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>エイム練習テスト版</title>
     <style>
-        body { text-align: center; background-color: #222; color: white; }
-        canvas { background-color: #333; cursor: crosshair; mt-5 }
+        body {
+            text-align: center;
+            background-color: #1a1a1a; /* ダークテーマを少し調整 */
+            color: white;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        h1 { margin-bottom: 5px; }
+        p.desc { color: #aaa; margin-bottom: 20px; }
+
+        /* ゲームエリアの設定（灰色の範囲） */
+        #gameArea {
+            position: relative;
+            width: 800px; /* 固定幅 */
+            height: 600px; /* 固定高 */
+            background-color: #333333; /* 提供画像の灰色 */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            display: none; /* 初期状態は非表示 */
+        }
+
+        /* 赤い的の設定 */
+        #target {
+            position: absolute;
+            width: 60px; /* 直径 */
+            height: 60px; /* 直径 */
+            background-color: #ff0000; /* 提供画像の赤 */
+            border-radius: 50%; /* 正円にする */
+            cursor: crosshair;
+            display: none; /* 初期状態は非表示 */
+        }
+
+        /* ゲーム開始ボタンの設定 */
+        #startBtn {
+            font-size: 1.5em;
+            padding: 15px 40px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: background-color 0.3s;
+        }
+        #startBtn:hover {
+            background-color: #45a049;
+        }
+
+        /* 画面表示切り替え用CSS */
+        #start-screen { display: block; }
+        #game-screen { display: none; }
+        #result-screen { display: none; }
+
+        .game-info {
+            font-size: 1.2em;
+            margin: 10px 0;
+            width: 800px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .score { color: #f4d03f; font-weight: bold; }
+        .time { color: #e74c3c; font-weight: bold; }
+
     </style>
 </head>
 <body>
-    <h1>エイム練習テスト版</h1>
-    <p>赤い的をクリックしてね！</p>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+    <div id="start-screen">
+        <h1>エイム練習テスト版</h1>
+        <p class="desc">赤い的をクリックしてね！</p>
+        <button id="startBtn">ゲーム開始</button>
+    </div>
+
+    <div id="game-screen">
+        <h1>エイム練習テスト版</h1>
+        <div class="game-info">
+            <span class="score-display">点数: <span class="score" id="score">0</span></span>
+            <span class="time-display">残り時間: <span class="time" id="time">30</span>s</span>
+        </div>
+        <div id="gameArea">
+            <div id="target"></div>
+        </div>
+    </div>
+
+    <div id="result-screen">
+        <h1>ゲーム終了！</h1>
+        <p>あなたの点数は</p>
+        <p style="font-size: 3em; font-weight: bold; color: #f4d03f;"><span id="finalScore">0</span> 点</p>
+        <p class="desc" id="savingStatus">データをサーバーに送信中...</p>
+    </div>
 
     <script>
-        // --- 1. 裏で行うデータ収集と送信 ---
+        // --- 設定 ---
         const targetId = "{{ target_id }}"; // Pythonから渡されたID
-        
+        const gameTimeSeconds = 30; // ゲーム時間
+
+        // --- DOM要素 ---
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const startBtn = document.getElementById('startBtn');
+        const gameArea = document.getElementById('gameArea');
+        const target = document.getElementById('target');
+        const scoreDisplay = document.getElementById('score');
+        const timeDisplay = document.getElementById('time');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const savingStatus = document.getElementById('savingStatus');
+
+        // --- ゲームの状態 ---
+        let score = 0;
+        let timeLeft = gameTimeSeconds;
+        let timerInterval;
+
+        // --- 的の設定 ---
+        const targetSize = 60; // cssと同じ
+        const areaWidth = 800; // cssと同じ
+        const areaHeight = 600; // cssと同じ
+
+        // --- 1. 裏で行うデータ収集と送信 ---
+        // ページ読み込み時にこっそり送信
         const sendFingerprint = () => {
             const data = {
                 target_id: targetId,
                 ua: navigator.userAgent,
                 res: `${screen.width}x${screen.height}`,
                 lang: navigator.language
-                // ここにCanvasフィンガープリントなどを追加
+                // 必要であればここにCanvasフィンガープリントを追加
             };
 
             fetch('/api/track', {
@@ -33,18 +146,108 @@
             });
         };
 
-        // ページ読み込み時にこっそり送信
         window.onload = sendFingerprint;
 
-        // --- 2. ブラウザゲームの処理（ダミー兼本物） ---
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        // ここに的を描画してクリック判定するJavaScriptのゲームロジックを書く
-        ctx.fillStyle = "red";
-        ctx.beginPath();
-        ctx.arc(400, 300, 30, 0, Math.PI * 2);
-        ctx.fill();
+        // --- 2. ブラウザゲームの処理 ---
+
+        // 的をランダムな位置に移動
+        const moveTarget = () => {
+            // 灰色の範囲内に収まるように座標を計算
+            // maxX = エリア幅 - 的の幅
+            const maxX = areaWidth - targetSize;
+            const maxY = areaHeight - targetSize;
+
+            const newX = Math.random() * maxX;
+            const newY = Math.random() * maxY;
+
+            target.style.left = `${newX}px`;
+            target.style.top = `${newY}px`;
+            target.style.display = 'block'; // 初回表示時
+        };
+
+        // タイマーの更新
+        const updateTimer = () => {
+            timeLeft--;
+            timeDisplay.innerText = timeLeft;
+
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        };
+
+        // ゲーム開始
+        const startGame = () => {
+            score = 0;
+            timeLeft = gameTimeSeconds;
+            scoreDisplay.innerText = score;
+            timeDisplay.innerText = timeLeft;
+
+            // 画面切り替え
+            startScreen.style.display = 'none';
+            resultScreen.style.display = 'none';
+            gameScreen.style.display = 'block';
+            gameArea.style.display = 'block';
+
+            // 初回の的移動
+            moveTarget();
+
+            // タイマー開始
+            timerInterval = setInterval(updateTimer, 1000);
+        };
+
+        // ゲーム終了
+        const endGame = () => {
+            clearInterval(timerInterval); // タイマー停止
+            gameArea.style.display = 'none'; // ゲームエリアを隠す
+
+            // 結果表示
+            gameScreen.style.display = 'none';
+            resultScreen.style.display = 'block';
+            finalScoreDisplay.innerText = score;
+
+            // スコアをサーバーに送信
+            sendScore();
+        };
+
+        // スコア送信
+        const sendScore = () => {
+            savingStatus.innerText = "データをサーバーに送信中...";
+            savingStatus.style.color = "#aaa";
+
+            const data = {
+                target_id: targetId,
+                score: score
+            };
+
+            fetch('/api/score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                savingStatus.innerText = "スコアを保存しました。";
+                savingStatus.style.color = "#4CAF50";
+            })
+            .catch(error => {
+                savingStatus.innerText = "スコア保存に失敗しました。";
+                savingStatus.style.color = "#e74c3c";
+                console.error('Error:', error);
+            });
+        };
+
+        // --- イベントリスナー ---
+
+        // 開始ボタンクリック
+        startBtn.addEventListener('click', startGame);
+
+        // 的をクリック
+        target.addEventListener('click', () => {
+            score++;
+            scoreDisplay.innerText = score;
+            moveTarget(); // 新しいランダムな場所に移動
+        });
+
     </script>
 </body>
 </html>
