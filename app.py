@@ -118,7 +118,26 @@ def compare_targets():
     </body></html>
     """
     return html
-
+# --- 【新規追加】データをリセットする秘密のURL ---
+@app.route('/reset')
+def reset_data():
+    # トラッキングデータを空にする
+    with open(TRACKING_FILE, "w", encoding="utf-8") as f:
+        f.truncate(0)
+    
+    # スコアデータを空にする
+    with open(SCORE_FILE, "w", encoding="utf-8") as f:
+        f.truncate(0)
+        
+    print("【システム】: 全データを手動でリセットしました。", flush=True)
+    
+    return """
+    <html><body style="font-family: sans-serif; text-align: center; margin-top: 50px;">
+        <h2 style="color: #d35400;">🗑️ データをすべてリセットしました。</h2>
+        <p>新しいターゲットのアクセスを待機します。</p>
+        <a href="/compare">比較ページを確認する</a>
+    </body></html>
+    """
 if __name__ == '__main__':
     if not os.path.exists(TRACKING_FILE):
         open(TRACKING_FILE, 'w').close()
