@@ -177,6 +177,7 @@
 
         // ゲーム開始
         const startGame = () => {
+            startBtn.disabled = true; // ★追加：ボタンを無効化して連打を防ぐ
             score = 0;
             timeLeft = gameTimeSeconds;
             scoreDisplay.innerText = score;
