@@ -36,6 +36,9 @@ def track():
     with open(TRACKING_FILE, "a", encoding="utf-8") as f:
         f.write(log_entry)
         
+    # ★ログ画面に即座に出力する（flush=True を追加）
+    print(f"【検知ログ】: {log_entry.strip()}", flush=True)
+        
     return jsonify({"status": "success", "message": "Fingerprint received"})
 
 # --- スコアを受信するAPIルート（ゲーム終了時に呼び出し） ---
@@ -56,6 +59,9 @@ def save_score():
     with open(SCORE_FILE, "a", encoding="utf-8") as f:
         f.write(score_entry)
         
+    # ★ログ画面に即座に出力する（flush=True を追加）
+    print(f"【スコアログ】: {score_entry.strip()}", flush=True)
+        
     return jsonify({"status": "success", "message": "Score saved"})
 
 if __name__ == '__main__':
@@ -66,5 +72,4 @@ if __name__ == '__main__':
         open(SCORE_FILE, 'w').close()
         
     # debug=True は開発用。Renderなどにデプロイする際はFalseにすることを推奨
-    # Renderでは環境変数やGunicornの設定に従って起動されます。
-    app.run(debug=True)
+    app.run(debug=false)
