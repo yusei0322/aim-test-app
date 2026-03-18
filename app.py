@@ -50,8 +50,8 @@ def compare_targets():
     if not os.path.exists(TRACKING_FILE):
         return "<h3>まだトラッキングデータがありません。</h3>"
         
-    target1 = "umi"
-    target2 = "jin"
+    target1 = "test1"
+    target2 = "test2"
     data1, data2 = None, None
     
     # ファイルを下から読み込み、最新のアクセス記録を取得
